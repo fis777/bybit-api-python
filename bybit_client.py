@@ -103,6 +103,78 @@ class BybitClient:
             logging.error(f"Ошибка получения orderbook: {e}")
             raise
 
+    def get_futures_ticker(self, symbol="BTCUSDT"):
+        """
+        Получить цену бессрочного фьючерса (linear perpetual)
+
+        Args:
+            symbol: Символ пары (например, BTCUSDT для фьючерса)
+        """
+        try:
+            response = self.client.get_tickers(
+                category="linear",
+                symbol=symbol
+            )
+            return response
+        except Exception as e:
+            logging.error(f"Ошибка получения futures ticker: {e}")
+            raise
+
+    def get_spot_and_futures_price(self, base_symbol):
+        """
+        Получить цены spot и futures для сравнения
+
+        Args:
+            base_symbol: Базовый символ (например, BTC, ETH, SOL)
+                        Автоматически добавит USDC для spot и USDT для futures
+
+        Returns:
+            dict: {
+                'spot': {'symbol': 'BTCUSDC', 'price': 70000.0},
+                'futures': {'symbol': 'BTCUSDT', 'price': 70050.0},
+                'spread': 50.0,
+                'spread_percent': 0.071
+            }
+        """
+        try:
+            spot_symbol = f"{base_symbol}USDC"
+            futures_symbol = f"{base_symbol}USDT"
+
+            # Получаем spot цену
+            spot_data = self.get_tickers(category="spot", symbol=spot_symbol)
+            spot_price = None
+            if spot_data['retCode'] == 0 and spot_data['result']['list']:
+                spot_price = float(spot_data['result']['list'][0]['lastPrice'])
+
+            # Получаем futures цену
+            futures_data = self.get_futures_ticker(symbol=futures_symbol)
+            futures_price = None
+            if futures_data['retCode'] == 0 and futures_data['result']['list']:
+                futures_price = float(futures_data['result']['list'][0]['lastPrice'])
+
+            # Расчет спреда
+            spread = None
+            spread_percent = None
+            if spot_price and futures_price:
+                spread = futures_price - spot_price
+                spread_percent = (spread / spot_price) * 100
+
+            return {
+                'spot': {
+                    'symbol': spot_symbol,
+                    'price': spot_price
+                },
+                'futures': {
+                    'symbol': futures_symbol,
+                    'price': futures_price
+                },
+                'spread': spread,
+                'spread_percent': spread_percent
+            }
+        except Exception as e:
+            logging.error(f"Ошибка получения spot и futures цен: {e}")
+            raise
+
     # === Account Methods ===
 
     def get_wallet_balance(self, accountType="UNIFIED"):
