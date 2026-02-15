@@ -1,6 +1,7 @@
-# Bybit API Client
+# Crypto Trading API Client
 
-Проект для работы с API криптобиржи Bybit на Python.
+Проект для работы с API криптобирж Bybit и Hyperliquid на Python.
+Включает REST API, WebSocket для real-time данных и арбитражный мониторинг.
 
 ## Возможности
 
